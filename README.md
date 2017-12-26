@@ -34,7 +34,7 @@ npm install -g cordova ionic
 
 
 
- # Backand Integration with existing project or new Project.
+ # Backand Integration in your ongoing project.
  Please follow below steps to start backand integration in your ongoing projects.
 
 1. Install dependencies
