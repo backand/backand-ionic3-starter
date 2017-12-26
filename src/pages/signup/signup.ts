@@ -4,6 +4,7 @@ import { BackandService } from '@backand/angular2-sdk';
 import { GooglePlus } from '@ionic-native/google-plus';
 import { Facebook, FacebookLoginResponse } from '@ionic-native/facebook';
 import { FacebookService, InitParams, LoginResponse } from 'ngx-facebook';
+import { LoadingController, AlertController } from 'ionic-angular';
 
 @Component({
   templateUrl: 'signup.html',
@@ -17,47 +18,52 @@ export class SignupPage {
   signUpPassword: string = '';
   confirmPassword: string = '';
   userData: any = {};
+  loaderIns: any;
 
-  constructor(private backand: BackandService, private googlePlus: GooglePlus, private fb: Facebook, private fbWeb: FacebookService) {
-    console.log('signup');
+  constructor(
+    private backand: BackandService,
+    private googlePlus: GooglePlus,
+    private fb: Facebook,
+    private fbWeb: FacebookService,
+    public loader: LoadingController,
+    public Alert: AlertController) {
 
-    // if you want Ionic web app to be usuable if shared as link in Facebook
+    //configure credentials for facebook  
     let initParams: InitParams = {
       appId: '1717659821597013',
       xfbml: true,
       version: 'v2.8'
     };
     fbWeb.init(initParams);
-    ///////////
-
-
-
-
   }
 
   public signUp() {
-    if (this.signUpPassword != this.confirmPassword) {
-      alert('Passwords should match');
+    if (this.signUpPassword !== this.confirmPassword) {
+      this.notify('Error', 'Passwords should match');
       return;
     }
+    this.showLoader();
     this.backand.signup(this.firstName, this.lastName, this.email, this.signUpPassword, this.confirmPassword)
       .then((res: any) => {
-        alert('Sign up succeeded');
+        this.hideLoader();
         this.email = this.signUpPassword = this.confirmPassword = this.firstName = this.lastName = '';
+        this.notify('Success', 'Sign up succeeded');
       },
       (err: any) => {
-        alert(err.data)
+        this.hideLoader();
+        this.notify('Error', `Error: ${err.data}`);
       }
       );
   }
 
   public socialWeb(provider: string): void {
-    console.log('socialWeb', provider);
     switch (provider) {
       case 'facebook':
+        this.showLoader();
         this.fbWeb.login()
           .then((response: LoginResponse) => {
             console.log('Logged into Facebook!', response);
+            this.hideLoader();
             if (response.status == 'connected') {
               this.userData = response;
               this.backand.socialSigninWithToken('facebook', response.authResponse.accessToken).then(
@@ -70,7 +76,7 @@ export class SignupPage {
               );
             }
             else {
-              console.log('Facebook failed');
+              this.notify('Error', 'Facebook Failed');
             }
           })
           .catch((error: any) => {
@@ -135,6 +141,48 @@ export class SignupPage {
         });
     }
 
+  }
+
+
+
+
+
+  /**
+   * @name showLoader 
+   * @description An helper function to show loading
+   * @private
+   * @memberof SignupPage
+   */
+  private showLoader() {
+    this.loaderIns = this.loader.create({
+      content: "Please wait...",
+      dismissOnPageChange: true
+    });
+    this.loaderIns.present();
+  }
+  /**
+   * @name hideLoader
+   * @description An helper function to hide loading
+   * @private
+   * @memberof SignupPage
+   */
+  private hideLoader() {
+    this.loaderIns.dismiss()
+  }
+
+  /**
+   * @description 
+   * @private
+   * @param {string} title 
+   * @param {string} message 
+   * @memberof SignupPage
+   */
+  private notify(title: string, message: string) {
+    this.Alert.create({
+      title: title,
+      subTitle: message,
+      buttons: ['OK']
+    }).present();
   }
 
 }
